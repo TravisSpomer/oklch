@@ -1,0 +1,26 @@
+.swatch {
+	width: 48px;
+	height: 48px;
+	display: grid;
+	grid-template-columns: auto auto;
+	grid-template-rows: auto auto auto;
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
+    align-content: space-evenly;
+	gap: 0 0.5em;
+
+	font-size: 8px;
+}
+
+.label {
+	font-weight: 600;
+}
+
+.light {
+	color: black;
+}
+
+.dark {
+	color: white;
+}
