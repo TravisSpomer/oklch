@@ -13,6 +13,6 @@ export default function swatch(props: SwatchProps) {
 		<span className={styles.label}>C</span>
 		<span>{Math.round(props.color.chroma * 100) / 100}</span>
 		<span className={styles.label}>H</span>
-		<span>{Math.round(props.color.lightness * 100)}°</span>
+		<span>{Math.round(props.color.hue)}°</span>
 	</div>
 }

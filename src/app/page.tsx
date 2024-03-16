@@ -27,8 +27,9 @@ export default function Home() {
 		{ name: "RGB", baseColors: [
 			{ lightness: .05, chroma: 0.100, hue: 15},
 			{ lightness: .75, chroma: 0.167, hue: 135 },
-			{ lightness: .95, chroma: 0.200, hue: 250 },
+			{ lightness: .95, chroma: 0.033, hue: 250 },
 		] },
+		// TODO: Add more examples
 	])
 	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
 	const swatches = useComputed<OklchColor[][]>(() => {
