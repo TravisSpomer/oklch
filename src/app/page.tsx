@@ -13,7 +13,7 @@ interface Ramp {
 }
 
 export default function Home() {
-	useSignals() // NOTE: These don't actually need to be signals since they never change; I was just trying out the library
+	useSignals() // NOTE: These don't actually need to be signals since they never change; I was just trying out the library.
 
 	const ramps = useSignal<Ramp[]>([
 		{ name: "Blue", baseColors: [
@@ -26,13 +26,27 @@ export default function Home() {
 			{ lightness: .570, chroma: 0.200, hue: 21 },
 			{ lightness: .952, chroma: 0.018, hue: 30 },
 		] },
-		{ name: "ugly RGB", baseColors: [
-			{ lightness: .05, chroma: 0.100, hue: 15},
-			{ lightness: .75, chroma: 0.167, hue: 135 },
-			{ lightness: .95, chroma: 0.033, hue: 250 },
+		{ name: "Ocean", baseColors: [
+			{ lightness: 0.00, chroma: 0.124, hue: 250 },
+			{ lightness: 1.00, chroma: 0.050, hue: 160 },
 		] },
-		// TODO: Add more examples
+		{ name: "Bloom", baseColors: [
+			{ lightness: .344, chroma: 0.091, hue: 13.5},
+			{ lightness: .737, chroma: 0.188, hue: 337},
+			{ lightness: .980, chroma: 0.014, hue: 337 },
+		] },
+		{ name: "Grey", baseColors: [
+			{ lightness: 0.50, chroma: 0.001, hue: 180 },
+		] },
+		/*{ name: "ugly RGB", baseColors: [
+			{ lightness: .050, chroma: 0.100, hue: 15},
+			{ lightness: .750, chroma: 0.167, hue: 135 },
+			{ lightness: .950, chroma: 0.033, hue: 250 },
+		] },*/
 	])
+
+	// These lightness values come from a draft color scheme I set up previously.
+	// They should probably instead be calculated using gamma.
 	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
 
 	const colorsManualMethod = useComputed<OklchColor[][]>(() => {
@@ -51,7 +65,7 @@ export default function Home() {
 		<main className={styles.main}>
 			<p><em>(To edit the color ramps, edit the code)</em></p>
 			<h1>My basic math version</h1>
-			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔</p>
+			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔 ("Bloom" doesn't work because I'm not wrapping hue correctly.)</p>
 			<table>
 				<thead>
 					<tr>
@@ -139,10 +153,11 @@ function createColorWithLightness(sortedBaseColors: readonly OklchColor[], light
 		const nextAlpha = (next.alpha === undefined || next.alpha === null) ? 1 : next.alpha
 
 		// Linearly interpolate between the nearest two base colors.
+		// For the hue angle, we always use the "in oklch shorter hue" method.
 		return {
 			lightness: lightness,
 			chroma: prev.chroma * (1 - proportionOfNext) + next.chroma * proportionOfNext,
-			hue: prev.hue * (1 - proportionOfNext) + next.hue * proportionOfNext, // TODO: support hue wrapping around red/0deg ***
+			hue: (next.hue - prev.hue > 180 ? prev.hue + 360 : prev.hue) * (1 - proportionOfNext) + (next.hue - prev.hue < -180 ? next.hue + 360 : next.hue) * proportionOfNext,
 			alpha: prevAlpha * (1 - proportionOfNext) + nextAlpha * proportionOfNext,
 		}
 	}
