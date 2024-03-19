@@ -68,7 +68,7 @@ export default function Home() {
 			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green. This ramp also shows (at least, on an old-school monitor) an example of how colors can be generated out of gamut for sRGB—the fix for this would be to manually define a shade of green within the sRGB gamut with a very high luminance instead of having the algorithm extrapolate one.</p>
 			<p><em>(For now, to edit the color ramps, edit the code.)</em></p>
 			<h2>My basic math version</h2>
-			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔 ("Bloom" doesn't work because I'm not wrapping hue correctly.)</p>
+			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔</p>
 			<table>
 				<thead>
 					<tr>
