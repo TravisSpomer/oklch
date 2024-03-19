@@ -27,7 +27,7 @@ export default function Home() {
 			{ lightness: .952, chroma: 0.018, hue: 30 },
 		] },
 		{ name: "Ocean", baseColors: [
-			{ lightness: 0.00, chroma: 0.124, hue: 250 },
+			{ lightness: 0.20, chroma: 0.124, hue: 250 },
 			{ lightness: 1.00, chroma: 0.050, hue: 160 },
 		] },
 		{ name: "Bloom", baseColors: [
@@ -63,8 +63,11 @@ export default function Home() {
 
 	return (
 		<main className={styles.main}>
-			<p><em>(To edit the color ramps, edit the code)</em></p>
-			<h1>My basic math version</h1>
+			<h1>OKLCH color ramps</h1>
+			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values, with a notable exception: it is possible that colors can be produced outside of the gamut of sRGB. When converted to a color that can actually be shown on your display, the displayed color may no longer appear exactly as bright as its neighbors, but it should still remain accessible.</p>
+			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green. This ramp also shows (at least, on an old-school monitor) an example of how colors can be generated out of gamut for sRGB—the fix for this would be to manually define a shade of green within the sRGB gamut with a very high luminance instead of having the algorithm extrapolate one.</p>
+			<p><em>(For now, to edit the color ramps, edit the code.)</em></p>
+			<h2>My basic math version</h2>
 			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔 ("Bloom" doesn't work because I'm not wrapping hue correctly.)</p>
 			<table>
 				<thead>
@@ -80,7 +83,7 @@ export default function Home() {
 					</tr>)}
 				</tbody>
 			</table>
-			<h1>A version using chroma.js</h1>
+			<h2>A version using chroma.js</h2>
 			<p>They have <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for this stuff</a> that's going to be way better than my code.</p>
 			<table>
 				<thead>
@@ -96,7 +99,7 @@ export default function Home() {
 					</tr>)}
 				</tbody>
 			</table>
-			<h1>A version using pure CSS</h1>
+			<h2>A version using pure CSS</h2>
 			<p><code>color-mix()</code> will do the work for us!</p>
 			<table>
 				<thead>
