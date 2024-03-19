@@ -1,7 +1,8 @@
 "use client"
 import { useComputed, useSignal, useSignals } from "@preact/signals-react/runtime"
+import chroma from 'chroma-js'
 
-import type { OklchColor } from "./OklchColor"
+import { oklchColorToCss, type OklchColor } from "./OklchColor"
 
 import styles from "./page.module.css"
 import Swatch from "./Swatch"
@@ -12,7 +13,8 @@ interface Ramp {
 }
 
 export default function Home() {
-	useSignals()
+	useSignals() // NOTE: These don't actually need to be signals since they never change; I was just trying out the library
+
 	const ramps = useSignal<Ramp[]>([
 		{ name: "Blue", baseColors: [
 			{ lightness: .975, chroma: 0.006, hue: 240 },
@@ -24,7 +26,7 @@ export default function Home() {
 			{ lightness: .570, chroma: 0.200, hue: 21 },
 			{ lightness: .952, chroma: 0.018, hue: 30 },
 		] },
-		{ name: "RGB", baseColors: [
+		{ name: "ugly RGB", baseColors: [
 			{ lightness: .05, chroma: 0.100, hue: 15},
 			{ lightness: .75, chroma: 0.167, hue: 135 },
 			{ lightness: .95, chroma: 0.033, hue: 250 },
@@ -32,13 +34,24 @@ export default function Home() {
 		// TODO: Add more examples
 	])
 	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
-	const swatches = useComputed<OklchColor[][]>(() => {
-		return ramps.value.map(ramp => createColorRamp(ramp.baseColors, lightnesses.value))
+
+	const colorsManualMethod = useComputed<OklchColor[][]>(() => {
+		return ramps.value.map(ramp => createColorRampManually(ramp.baseColors, lightnesses.value))
+	})
+
+	const colorsUsingChromaJs = useComputed<OklchColor[][]>(() => {
+		return ramps.value.map(ramp => createColorRampUsingChromaJs(ramp.baseColors, lightnesses.value))
+	})
+
+	const colorsUsingCss = useComputed<string[][]>(() => {
+		return ramps.value.map(ramp => createColorRampUsingCss(ramp.baseColors, lightnesses.value))
 	})
 
 	return (
 		<main className={styles.main}>
-			<p><em>(The UI is that you edit the code)</em></p>
+			<p><em>(To edit the color ramps, edit the code)</em></p>
+			<h1>My basic math version</h1>
+			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔</p>
 			<table>
 				<thead>
 					<tr>
@@ -47,7 +60,39 @@ export default function Home() {
 					</tr>
 				</thead>
 				<tbody>
-					{swatches.value.map((row, rowIndex) => <tr key={rowIndex}>
+					{colorsManualMethod.value.map((row, rowIndex) => <tr key={rowIndex}>
+						<th>{ramps.value[rowIndex].name}</th>
+						{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
+					</tr>)}
+				</tbody>
+			</table>
+			<h1>A version using chroma.js</h1>
+			<p>They have <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for this stuff</a> that's going to be way better than my code.</p>
+			<table>
+				<thead>
+					<tr>
+						<th></th>
+						{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
+					</tr>
+				</thead>
+				<tbody>
+					{colorsUsingChromaJs.value.map((row, rowIndex) => <tr key={rowIndex}>
+						<th>{ramps.value[rowIndex].name}</th>
+						{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
+					</tr>)}
+				</tbody>
+			</table>
+			<h1>A version using pure CSS</h1>
+			<p><code>color-mix()</code> will do the work for us!</p>
+			<table>
+				<thead>
+					<tr>
+						<th></th>
+						{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
+					</tr>
+				</thead>
+				<tbody>
+					{colorsUsingCss.value.map((row, rowIndex) => <tr key={rowIndex}>
 						<th>{ramps.value[rowIndex].name}</th>
 						{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
 					</tr>)}
@@ -57,7 +102,7 @@ export default function Home() {
 	);
 }
 
-function createColorRamp(baseColors: OklchColor[], lightnesses: number[]): OklchColor[] {
+function createColorRampManually(baseColors: OklchColor[], lightnesses: number[]): OklchColor[] {
 	// Sort the base colors for each ramp by lightness if they aren't already.
 	baseColors.sort((a, b) => a.lightness - b.lightness)
 
@@ -101,4 +146,40 @@ function createColorWithLightness(sortedBaseColors: readonly OklchColor[], light
 			alpha: prevAlpha * (1 - proportionOfNext) + nextAlpha * proportionOfNext,
 		}
 	}
+}
+
+function createColorRampUsingChromaJs(baseColors: OklchColor[], lightnesses: number[]): OklchColor[] {
+	// Sort the base colors for each ramp by lightness if they aren't already.
+	baseColors.sort((a, b) => a.lightness - b.lightness)
+
+	// Then, generate a new set of colors from the base colors.
+	const gradient = chroma.scale([chroma.oklch(0, baseColors[0].chroma, baseColors[0].hue, baseColors[0].alpha), ...(baseColors.map(color => chroma.oklch(color.lightness, color.chroma, color.hue, color.alpha))), chroma.oklch(1, baseColors[baseColors.length - 1].chroma, baseColors[baseColors.length - 1].hue, baseColors[baseColors.length - 1].alpha)]).domain([0, ...(baseColors.map(color => color.lightness)), 1]).mode("oklch")
+	return lightnesses.map(lightness => {
+		const color = gradient(lightness).oklch()
+		return { lightness: color[0], chroma: color[1], hue: color[2] }
+	})
+}
+
+function createColorRampUsingCss(baseColors: OklchColor[], lightnesses: number[]): string[] {
+	// Sort the base colors for each ramp by lightness if they aren't already, and then add black and white on the ends.
+	baseColors.sort((a, b) => a.lightness - b.lightness)
+	const sortedBaseColors = [
+		{ lightness: 0, chroma: baseColors[0].chroma, hue: baseColors[0].hue, alpha: baseColors[0].alpha },
+		...baseColors,
+		{ lightness: 1, chroma: baseColors[baseColors.length - 1].chroma, hue: baseColors[baseColors.length - 1].hue, alpha: baseColors[baseColors.length - 1].alpha },
+	]
+
+	// Then, generate a new set of colors from the base colors.
+	return lightnesses.map(lightness => createColorWithLightnessUsingCss(sortedBaseColors, lightness))
+}
+
+function createColorWithLightnessUsingCss(sortedBaseColors: readonly OklchColor[], lightness: number): string {
+	// Find the darkest base color that is lighter than this one.
+	const nextIndex = sortedBaseColors.findIndex(other => other.lightness > lightness)
+	const prev = sortedBaseColors[nextIndex - 1]
+	const next = sortedBaseColors[nextIndex]
+	const proportionOfNext = (lightness - prev.lightness) / (next.lightness - prev.lightness)
+
+	// Now let the browser do the color math for us. 
+	return `color-mix(in oklch, ${oklchColorToCss(prev)}, ${oklchColorToCss(next)} ${proportionOfNext * 100}%)`
 }
