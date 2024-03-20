@@ -1,5 +1,5 @@
 "use client"
-import { useComputed, useSignal, useSignals } from "@preact/signals-react/runtime"
+import { useComputed, useSignal, useSignalEffect, useSignals } from "@preact/signals-react/runtime"
 import chroma from 'chroma-js'
 
 import { oklchColorToCss, type OklchColor } from "./OklchColor"
@@ -47,7 +47,9 @@ export default function Home() {
 
 	// These lightness values come from a draft color scheme I set up previously.
 	// They should probably instead be calculated using gamma.
+	const lightnessesString = useSignal("30%, 42%, 47%, 56%, 65%, 78%, 90%, 95%, 98%")
 	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
+	useSignalEffect(() => { lightnesses.value = parseLightnesses(lightnessesString.value) || lightnesses.value })
 
 	const colorsManualMethod = useComputed<OklchColor[][]>(() => {
 		return ramps.value.map(ramp => createColorRampManually(ramp.baseColors, lightnesses.value))
@@ -66,7 +68,12 @@ export default function Home() {
 			<h1>OKLCH color ramps</h1>
 			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values, with a notable exception: it is possible that colors can be produced outside of the gamut of sRGB. When converted to a color that can actually be shown on your display, the displayed color may no longer appear exactly as bright as its neighbors, but it should still remain accessible.</p>
 			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green. This ramp also shows (at least, on an old-school monitor) an example of how colors can be generated out of gamut for sRGB—the fix for this would be to manually define a shade of green within the sRGB gamut with a very high luminance instead of having the algorithm extrapolate one.</p>
-			<p><em>(For now, to edit the color ramps, edit the code.)</em></p>
+			<h3>Lightness ramp</h3>
+			<label>
+				Enter one or more lightness percentages, 0-100, separated by commas:
+				<br />
+				<input type="text" value={lightnessesString.value} onChange={ev => lightnessesString.value = ev.target.value} size={80} />
+			</label>
 			<h2>My basic math version</h2>
 			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔</p>
 			<table>
@@ -116,7 +123,22 @@ export default function Home() {
 				</tbody>
 			</table>
 		</main>
-	);
+	)
+}
+
+function parseLightnesses(input: string): number[] | null {
+	try {
+		const percentStrings = input.split(",").map(string => string.trim()).filter(string => !!string)
+		console.log("percentStrings:", percentStrings)
+		const numbers = percentStrings.map(string => parseInt(string, 10)).filter(number => !isNaN(number)).map(number => number < 0 ? 0 : number > 100 ? 1 : number / 100)
+		numbers.sort()
+		console.log("numbers:", numbers)
+		return numbers.length ? numbers : [.50]
+	}
+	catch (ex) {
+		console.error(ex)
+		return null
+	}
 }
 
 function createColorRampManually(baseColors: OklchColor[], lightnesses: number[]): OklchColor[] {
@@ -193,7 +215,8 @@ function createColorRampUsingCss(baseColors: OklchColor[], lightnesses: number[]
 
 function createColorWithLightnessUsingCss(sortedBaseColors: readonly OklchColor[], lightness: number): string {
 	// Find the darkest base color that is lighter than this one.
-	const nextIndex = sortedBaseColors.findIndex(other => other.lightness > lightness)
+	let nextIndex = sortedBaseColors.findIndex(other => other.lightness > lightness)
+	if (nextIndex < 0) nextIndex = sortedBaseColors.length - 1
 	const prev = sortedBaseColors[nextIndex - 1]
 	const next = sortedBaseColors[nextIndex]
 	const proportionOfNext = (lightness - prev.lightness) / (next.lightness - prev.lightness)
