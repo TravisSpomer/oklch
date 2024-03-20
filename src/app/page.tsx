@@ -152,7 +152,7 @@ export default function Home() {
 
 function chromaColorToOurs(color: Color): OklchColor {
 	const oklch = color.oklch()
-	return { lightness: oklch[0], chroma: oklch[1], hue: oklch[2], alpha: oklch[3] }
+	return { lightness: oklch[0], chroma: oklch[1], hue: oklch[2] }
 }
 
 function parseLightnesses(input: string): number[] | null {
