@@ -106,37 +106,47 @@ export default function Home() {
 				</tbody>
 			</table>
 			<h2>A version using chroma.js</h2>
-			<p>The chroma.js library has <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for color scales</a> but I like my version better.</p>
-			<table>
-				<thead>
-					<tr>
-						<th></th>
-						{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
-					</tr>
-				</thead>
-				<tbody>
-					{colorsUsingChromaJs.value.map((row, rowIndex) => <tr key={rowIndex}>
-						<th>{ramps.value[rowIndex].name}</th>
-						{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
-					</tr>)}
-				</tbody>
-			</table>
+			<details>
+				<summary>
+					Show
+				</summary>
+				<p>The chroma.js library has <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for color scales</a> but I like my version better.</p>
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
+						</tr>
+					</thead>
+					<tbody>
+						{colorsUsingChromaJs.value.map((row, rowIndex) => <tr key={rowIndex}>
+							<th>{ramps.value[rowIndex].name}</th>
+							{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
+						</tr>)}
+					</tbody>
+				</table>
+			</details>
 			<h2>A version using pure CSS</h2>
-			<p>CSS Color Module Level 4 has <code>color-mix()</code> which will do the work for us! But it appears that no browser is currently gamut-mapping colors properly.</p>
-			<table>
-				<thead>
-					<tr>
-						<th></th>
-						{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
-					</tr>
-				</thead>
-				<tbody>
-					{colorsUsingCss.value.map((row, rowIndex) => <tr key={rowIndex}>
-						<th>{ramps.value[rowIndex].name}</th>
-						{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
-					</tr>)}
-				</tbody>
-			</table>
+			<details>
+				<summary>
+					Show
+				</summary>
+				<p>CSS Color Module Level 4 has <code>color-mix()</code> which will do the work for us! But it appears that no browser is currently gamut-mapping colors properly.</p>
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							{lightnesses.value.map((lightness, index) => <th key={index}>{Math.round(lightness * 1000) / 10}</th>)}
+						</tr>
+					</thead>
+					<tbody>
+						{colorsUsingCss.value.map((row, rowIndex) => <tr key={rowIndex}>
+							<th>{ramps.value[rowIndex].name}</th>
+							{row.map((color, colorIndex) => <td key={colorIndex}><Swatch color={color} /></td>)}
+						</tr>)}
+					</tbody>
+				</table>
+			</details>
 		</main>
 	)
 
