@@ -1,6 +1,13 @@
 .swatch {
 	width: 48px;
 	height: 48px;
+
+	font-size: 8px;
+}
+
+.content {
+	width: 100%;
+	height: 100%;
 	display: grid;
 	grid-template-columns: auto auto;
 	grid-template-rows: auto auto auto;
@@ -9,8 +16,10 @@
     justify-items: center;
     align-content: space-evenly;
 	gap: 0 0.5em;
+}
 
-	font-size: 8px;
+.content:not(:hover) {
+	opacity: 0;
 }
 
 .label {
