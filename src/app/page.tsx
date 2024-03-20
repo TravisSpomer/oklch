@@ -13,7 +13,7 @@ interface Ramp {
 }
 
 export default function Home() {
-	useSignals() // NOTE: These don't actually need to be signals since they never change; I was just trying out the library.
+	useSignals()
 
 	const ramps = useSignal<Ramp[]>([
 		{ name: "Blue", baseColors: [
@@ -35,14 +35,13 @@ export default function Home() {
 			{ lightness: .737, chroma: 0.188, hue: 337},
 			{ lightness: .980, chroma: 0.014, hue: 337 },
 		] },
+		{ name: "Gold", baseColors: [
+			{ lightness: 0.919, chroma: 0.192, hue: 102 },
+			{ lightness: 0.662, chroma: 0.205, hue: 70 },
+		] },
 		{ name: "Grey", baseColors: [
 			{ lightness: 0.50, chroma: 0.001, hue: 180 },
 		] },
-		/*{ name: "ugly RGB", baseColors: [
-			{ lightness: .050, chroma: 0.100, hue: 15},
-			{ lightness: .750, chroma: 0.167, hue: 135 },
-			{ lightness: .950, chroma: 0.033, hue: 250 },
-		] },*/
 	])
 
 	// These lightness values come from a draft color scheme I set up previously.
@@ -91,7 +90,7 @@ export default function Home() {
 				</tbody>
 			</table>
 			<h2>A version using chroma.js</h2>
-			<p>They have <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for this stuff</a> that's going to be way better than my code.</p>
+			<p>They have <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for color scales</a> but I like my math and the pure CSS versions better visually.</p>
 			<table>
 				<thead>
 					<tr>
@@ -129,10 +128,8 @@ export default function Home() {
 function parseLightnesses(input: string): number[] | null {
 	try {
 		const percentStrings = input.split(",").map(string => string.trim()).filter(string => !!string)
-		console.log("percentStrings:", percentStrings)
 		const numbers = percentStrings.map(string => parseInt(string, 10)).filter(number => !isNaN(number)).map(number => number < 0 ? 0 : number > 100 ? 1 : number / 100)
 		numbers.sort()
-		console.log("numbers:", numbers)
 		return numbers.length ? numbers : [.50]
 	}
 	catch (ex) {
