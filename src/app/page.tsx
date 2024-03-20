@@ -1,6 +1,7 @@
 "use client"
 import { useComputed, useSignal, useSignalEffect, useSignals } from "@preact/signals-react/runtime"
-import chroma, { Color } from 'chroma-js'
+import { clampChroma } from "culori"
+import chroma, { Color } from "chroma-js"
 
 import { oklchColorToCss, type OklchColor } from "./OklchColor"
 
@@ -67,8 +68,8 @@ export default function Home() {
 	return (
 		<main className={styles.main}>
 			<h1>OKLCH color ramps</h1>
-			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values, with a notable exception: it is possible that colors can be produced outside of the gamut of sRGB. When converted to a color that can actually be shown on your display, the displayed color may no longer appear exactly as bright as its neighbors, but it should still remain accessible.</p>
-			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green. This ramp also shows (at least, on an old-school monitor) an example of how colors can be generated out of gamut for sRGB—the fix for this would be to manually define a shade of green within the sRGB gamut with a very high luminance instead of having the algorithm extrapolate one.</p>
+			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values.</p>
+			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green.</p>
 			<h3>Custom colors</h3>
 			<label>
 				Enter one or more hex colors (1234ab), separated by commas:
@@ -76,15 +77,15 @@ export default function Home() {
 				<input type="text" value={colorsString.value} onChange={ev => colorsString.value = ev.target.value} size={80} />
 			</label>
 			<button type="button" onClick={addColorPalette}>Add</button>
-			<p>Note that when specifying a single, saturated custom color, the lighter end of your color ramp will likely include colors that your monitor can't display properly. Avoid this by including a lighter, desaturated version of the same color. (I need to develop a technique for lowering chroma until the color is in sRGB gamut.)</p>
+			<p>Note that when specifying a single, saturated custom color, the lighter end of your color ramp would likely include colors that your monitor can't display properly. "My version" includes a gamut-mapping step that reduces chroma (saturation) until the result is a displayable sRGB color.</p>
 			<h3>Lightness ramp</h3>
 			<label>
 				Enter one or more lightness percentages, 0-100, separated by commas:
 				<br />
 				<input type="text" value={lightnessesString.value} onChange={ev => lightnessesString.value = ev.target.value} size={80} />
 			</label>
-			<h2>My basic math version</h2>
-			<p>My very basic algorithm is not correct because OKLCH is a cylindrical space but I'm doing linear math. But... it seems very close to chroma.js's results... 🤔</p>
+			<h2>My version</h2>
+			<p>My version is mostly simple math, with a dash of <code>culori.js</code> to handle the very complex logic of gamut-mapping very light colors to sRGB. (Note, for example, that in the other versions but not this one, the brightest two colors of Gold are too saturated and not the same perceived lightness as the ones above and below.)</p>
 			<table>
 				<thead>
 					<tr>
@@ -100,7 +101,7 @@ export default function Home() {
 				</tbody>
 			</table>
 			<h2>A version using chroma.js</h2>
-			<p>They have <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for color scales</a> but I like my math and the pure CSS versions better visually.</p>
+			<p>The chroma.js library has <a href="https://gka.github.io/chroma.js/#color-scales" target="_blank">built-in support for color scales</a> but I like my version better.</p>
 			<table>
 				<thead>
 					<tr>
@@ -116,7 +117,7 @@ export default function Home() {
 				</tbody>
 			</table>
 			<h2>A version using pure CSS</h2>
-			<p><code>color-mix()</code> will do the work for us!</p>
+			<p>CSS Color Module Level 4 has <code>color-mix()</code> which will do the work for us! But it appears that no browser is currently gamut-mapping colors properly.</p>
 			<table>
 				<thead>
 					<tr>
@@ -181,16 +182,18 @@ function createColorWithLightness(sortedBaseColors: readonly OklchColor[], light
 	if (stopsCount === 0) throw new Error("At least one base color is required.")
 	if (stopsCount > 1 && sortedBaseColors[0].lightness > sortedBaseColors[stopsCount - 1].lightness) throw new Error("Base colors must be sorted from lightness, from 0 to 1.")
 
+	let color: OklchColor
+
 	// Otherwise, figure out where this new color lies in the spectrum.
 	if (stopsCount === 1 || lightness <= sortedBaseColors[0].lightness)
 	{
 		// Darker than all base colors, or there's only one base color anyway
-		return { ...sortedBaseColors[0], lightness: lightness }
+		color = { ...sortedBaseColors[0], lightness: lightness }
 	}
 	else if (lightness >= sortedBaseColors[stopsCount - 1].lightness)
 	{
 		// Lighter than all base colors
-		return { ...sortedBaseColors[stopsCount - 1], lightness: lightness }
+		color = { ...sortedBaseColors[stopsCount - 1], lightness: lightness }
 	}
 	else
 	{
@@ -206,13 +209,22 @@ function createColorWithLightness(sortedBaseColors: readonly OklchColor[], light
 
 		// Linearly interpolate between the nearest two base colors.
 		// For the hue angle, we always use the "in oklch shorter hue" method.
-		return {
+		color = {
 			lightness: lightness,
 			chroma: prev.chroma * (1 - proportionOfNext) + next.chroma * proportionOfNext,
 			hue: (next.hue - prev.hue > 180 ? prev.hue + 360 : prev.hue) * (1 - proportionOfNext) + (next.hue - prev.hue < -180 ? next.hue + 360 : next.hue) * proportionOfNext,
 			alpha: prevAlpha * (1 - proportionOfNext) + nextAlpha * proportionOfNext,
 		}
 	}
+
+	// Finally, reduce chroma until the color fits in the sRGB gamut. The math for this is very complicated
+	// so I'll just cheat and use a library.
+	// CSS Color Module Level 4 on gamut mapping:
+	// https://drafts.csswg.org/css-color/#css-gamut-mapped
+	// As far as I can tell (and as far as I can see in the CSS version in this demo), browsers are currently not
+	// yet using the procedure defined in that section to gamut-map colors.
+	const clamped = clampChroma({ mode: "oklch", l: color.lightness, c: color.chroma, h: color.hue }, "oklch")
+	return { ...color, chroma: clamped.c }
 }
 
 function createColorRampUsingChromaJs(baseColors: OklchColor[], lightnesses: number[]): OklchColor[] {
