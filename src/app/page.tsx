@@ -37,19 +37,21 @@ export default function Home() {
 			{ lightness: .980, chroma: 0.014, hue: 337 },
 		] },
 		{ name: "Gold", baseColors: [
-			{ lightness: 0.919, chroma: 0.192, hue: 102 },
+			{ lightness: 0.350, chroma: 0.090, hue: 30 },
 			{ lightness: 0.662, chroma: 0.205, hue: 70 },
+			{ lightness: 0.950, chroma: 0.200, hue: 102 },
 		] },
 		{ name: "Grey", baseColors: [
 			{ lightness: 0.50, chroma: 0.001, hue: 180 },
 		] },
 	])
 
-	// These lightness values come from a draft color scheme I set up previously.
-	// They should probably instead be calculated using gamma.
-	const lightnessesString = useSignal("30%, 42%, 47%, 56%, 65%, 78%, 90%, 95%, 98%")
-	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
-	useSignalEffect(() => { lightnesses.value = parseLightnesses(lightnessesString.value) || lightnesses.value })
+	// The defaults should probably instead be calculated using gamma or something else more clever than picking arbitrarily.
+	const lightnessesString = useSignal("")
+	const lightnesses = useSignal([ .10, .25, .35, .40, .45, .50, .55, .60, .65, .70, .75, .80, .85, .90, .95, .98 ])
+	useSignalEffect((): void => {
+
+	})
 
 	const colorsString = useSignal("")
 
@@ -72,18 +74,21 @@ export default function Home() {
 			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green.</p>
 			<h3>Custom colors</h3>
 			<label>
-				Enter one or more hex colors (1234ab), separated by commas:
+				Enter one or more CSS colors separated by commas:
 				<br />
-				<input type="text" value={colorsString.value} onChange={ev => colorsString.value = ev.target.value} size={80} />
+				<input type="text" value={colorsString.value} onChange={ev => colorsString.value = ev.target.value} onKeyDown={onNewColorsKeyDown} size={80} />
 			</label>
 			<button type="button" onClick={addColorPalette}>Add</button>
-			<p>Note that when specifying a single, saturated custom color, the lighter end of your color ramp would likely include colors that your monitor can't display properly. "My version" includes a gamut-mapping step that reduces chroma (saturation) until the result is a displayable sRGB color.</p>
+			<br />
+			<small><em>Example: c43e1c, goldenrod, lime</em></small>
 			<h3>Lightness ramp</h3>
 			<label>
-				Enter one or more lightness percentages, 0-100, separated by commas:
+				Enter one or more lightness percentages, separated by commas:
 				<br />
-				<input type="text" value={lightnessesString.value} onChange={ev => lightnessesString.value = ev.target.value} size={80} />
+				<input type="text" value={lightnessesString.value} onChange={onLightnessesChange} size={80} />
 			</label>
+			<br />
+			<small><em>Example: 10, 25, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 98</em></small>
 			<h2>My version</h2>
 			<p>My version is mostly simple math, with a dash of <code>culori.js</code> to handle the very complex logic of gamut-mapping very light colors to sRGB. (Note, for example, that in the other versions but not this one, the brightest two colors of Gold are too saturated and not the same perceived lightness as the ones above and below.)</p>
 			<table>
@@ -134,6 +139,10 @@ export default function Home() {
 			</table>
 		</main>
 	)
+
+	function onNewColorsKeyDown(ev: React.KeyboardEvent<HTMLInputElement>) {
+		if (ev.key === "Enter") addColorPalette()
+	}
 	
 	function addColorPalette() {
 		try {
@@ -141,7 +150,7 @@ export default function Home() {
 			const colors = colorStrings.filter(string => chroma.valid(string)).map(string => chroma(string)).map(chromaColorToOurs)
 			if (colors.length < 1) return
 
-			ramps.value = [...ramps.value, { name: "Custom", baseColors: colors }]
+			ramps.value = [...ramps.value, { name: colors.length === 1 ? colorStrings[0] : `[${colors.length}…]`, baseColors: colors }]
 			colorsString.value = ""
 		}
 		catch (ex) {
@@ -149,11 +158,17 @@ export default function Home() {
 			return
 		}
 	}
+
+	function onLightnessesChange(ev: React.ChangeEvent<HTMLInputElement>) {
+		lightnessesString.value = ev.target.value
+		const value = parseLightnesses(ev.target.value)
+		if (value) lightnesses.value = value
+	}
 }
 
 function chromaColorToOurs(color: Color): OklchColor {
 	const oklch = color.oklch()
-	return { lightness: oklch[0], chroma: oklch[1], hue: oklch[2] }
+	return { lightness: oklch[0], chroma: oklch[1], hue: isNaN(oklch[2]) ? 345 : oklch[2] }
 }
 
 function parseLightnesses(input: string): number[] | null {
@@ -161,7 +176,7 @@ function parseLightnesses(input: string): number[] | null {
 		const percentStrings = input.split(",").map(string => string.trim()).filter(string => !!string)
 		const numbers = percentStrings.map(string => parseInt(string, 10)).filter(number => !isNaN(number)).map(number => number < 0 ? 0 : number > 100 ? 1 : number / 100)
 		numbers.sort()
-		return numbers.length ? numbers : [.50]
+		return numbers.length ? numbers : null
 	}
 	catch (ex) {
 		console.error(ex)
