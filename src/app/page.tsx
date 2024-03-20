@@ -1,6 +1,6 @@
 "use client"
 import { useComputed, useSignal, useSignalEffect, useSignals } from "@preact/signals-react/runtime"
-import chroma from 'chroma-js'
+import chroma, { Color } from 'chroma-js'
 
 import { oklchColorToCss, type OklchColor } from "./OklchColor"
 
@@ -50,6 +50,8 @@ export default function Home() {
 	const lightnesses = useSignal([ .30, .42, .47, .56, .65, .78, .90, .95, .98 ])
 	useSignalEffect(() => { lightnesses.value = parseLightnesses(lightnessesString.value) || lightnesses.value })
 
+	const colorsString = useSignal("")
+
 	const colorsManualMethod = useComputed<OklchColor[][]>(() => {
 		return ramps.value.map(ramp => createColorRampManually(ramp.baseColors, lightnesses.value))
 	})
@@ -67,6 +69,14 @@ export default function Home() {
 			<h1>OKLCH color ramps</h1>
 			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values, with a notable exception: it is possible that colors can be produced outside of the gamut of sRGB. When converted to a color that can actually be shown on your display, the displayed color may no longer appear exactly as bright as its neighbors, but it should still remain accessible.</p>
 			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green. This ramp also shows (at least, on an old-school monitor) an example of how colors can be generated out of gamut for sRGB—the fix for this would be to manually define a shade of green within the sRGB gamut with a very high luminance instead of having the algorithm extrapolate one.</p>
+			<h3>Custom colors</h3>
+			<label>
+				Enter one or more hex colors (1234ab), separated by commas:
+				<br />
+				<input type="text" value={colorsString.value} onChange={ev => colorsString.value = ev.target.value} size={80} />
+			</label>
+			<button type="button" onClick={addColorPalette}>Add</button>
+			<p>Note that when specifying a single, saturated custom color, the lighter end of your color ramp will likely include colors that your monitor can't display properly. Avoid this by including a lighter, desaturated version of the same color. (I need to develop a technique for lowering chroma until the color is in sRGB gamut.)</p>
 			<h3>Lightness ramp</h3>
 			<label>
 				Enter one or more lightness percentages, 0-100, separated by commas:
@@ -123,6 +133,26 @@ export default function Home() {
 			</table>
 		</main>
 	)
+	
+	function addColorPalette() {
+		try {
+			const colorStrings = colorsString.value.split(",").map(string => string.trim()).filter(string => !!string)
+			const colors = colorStrings.filter(string => chroma.valid(string)).map(string => chroma(string)).map(chromaColorToOurs)
+			if (colors.length < 1) return
+
+			ramps.value = [...ramps.value, { name: "Custom", baseColors: colors }]
+			colorsString.value = ""
+		}
+		catch (ex) {
+			console.error(ex)
+			return
+		}
+	}
+}
+
+function chromaColorToOurs(color: Color): OklchColor {
+	const oklch = color.oklch()
+	return { lightness: oklch[0], chroma: oklch[1], hue: oklch[2], alpha: oklch[3] }
 }
 
 function parseLightnesses(input: string): number[] | null {
