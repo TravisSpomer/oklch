@@ -72,6 +72,7 @@ export default function Home() {
 			<h1>OKLCH color ramps</h1>
 			<p>This is an experiment showing how one could create perceptually uniform color ramps based on <em>multiple</em> source colors. Notice how in each color ramp, 30% appears identically bright, and so does 65%, 90%, and so on—that's definitely not the case with sRGB. This ensures that white text is always accessible on the 30% slot for a set of source colors, and black text is always accessible on the 90% slot. All this remains true with all colors and lightness values.</p>
 			<p>This technique also allows for color ramps in which the hue is not the same across the spectrum. Notice that the "Ocean" ramp starts with a royal blue and ends with a seafoam green.</p>
+			<p>My crappy code is on <a href="https://github.com/travisspomer/oklch" target="_blank">GitHub</a>.</p>
 			<h3>Custom colors</h3>
 			<label>
 				Enter one or more CSS colors separated by commas:
